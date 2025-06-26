@@ -18,9 +18,10 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3000,
+    strictPort: false,
     allowedHosts: [
-      'fdnxkrmhzpmg.sealosbja.site',
-      '.sealosbja.site',  // 允许所有sealosbja.site的子域名
+      'jmeuiklgslrw.usw.sealos.io',  // 新的部署域名
+      '.usw.sealos.io',  // 允许所有usw.sealos.io的子域名
       'localhost',
       '127.0.0.1'
     ]
