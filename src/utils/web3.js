@@ -4,10 +4,12 @@ import { getContractAddress } from "@/config/index.js";
 
 // 合约配置
 export const CONTRACT_CONFIG = {
-  // Ganache 本地网络合约地址 (需要部署后更新)
+  // Ganache 本地网络合约地址
   GANACHE_ADDRESS: "0x0000000000000000000000000000000000000000",
-  // JuChain 测试网合约地址 (需要部署后更新)
-  JUCHAIN_ADDRESS: "0x241676A9E6E6C9B55E895c913Bf9C0A27F225622",
+  // JuChain 测试网合约地址 (从环境变量读取)
+  JUCHAIN_ADDRESS: import.meta.env.VITE_JUCHAIN_TESTNET_CONTRACT_ADDRESS,
+  // JuChain 主网合约地址 (从环境变量读取)
+  JUCHAIN_MAINNET_ADDRESS: import.meta.env.VITE_JUCHAIN_MAINNET_CONTRACT_ADDRESS,
   // 网络配置
   NETWORKS: {
     GANACHE: {
@@ -30,10 +32,21 @@ export const CONTRACT_CONFIG = {
         decimals: 18,
       },
       rpcUrls: [
-        "https://testnet-rpc.juchain.org", // 优先使用工作的RPC
+        import.meta.env.VITE_JUCHAIN_TESTNET_RPC || "https://testnet-rpc.juchain.org", // 从环境变量读取
         "https://rpc-testnet.juchain.org",
       ],
       blockExplorerUrls: ["https://testnet.juscan.io"],
+    },
+    JUCHAIN_MAINNET: {
+      chainId: "0x33450", // 210000 (十六进制格式，MetaMask要求)
+      chainName: "JuChain Mainnet",
+      nativeCurrency: {
+        name: "JU",
+        symbol: "JU",
+        decimals: 18,
+      },
+      rpcUrls: [import.meta.env.VITE_JUCHAIN_MAINNET_RPC || "https://rpc.juchain.org"], // 从环境变量读取
+      blockExplorerUrls: ["https://juscan.io"],
     },
   },
 };
@@ -88,11 +101,28 @@ export class Web3Service {
       const network = await this.provider.getNetwork();
       this.currentNetwork = network;
 
+      // 自动切换到JuChain主网
+      console.log("web3Service: 检查网络，自动切换到JuChain主网...");
+      const currentChainId = Number(this.currentNetwork.chainId);
+      if (currentChainId !== 210000) {
+        console.log("web3Service: 当前不在JuChain主网，开始切换...");
+        try {
+          await this.switchToJuChainMainnet();
+          // 重新初始化provider和signer以确保同步
+          this.provider = new ethers.BrowserProvider(window.ethereum);
+          this.signer = await this.provider.getSigner();
+          await this.updateCurrentNetwork();
+          console.log("web3Service: 成功切换到JuChain主网并重新初始化");
+        } catch (error) {
+          console.warn("web3Service: 切换到主网失败，但继续连接:", error);
+        }
+      }
+
       console.log("web3Service: 连接成功", {
         account: this.currentAccount,
         network: this.currentNetwork,
       });
-
+     
       return {
         account: this.currentAccount,
         network: this.currentNetwork,
@@ -237,9 +267,17 @@ export class Web3Service {
       throw new Error("请先连接钱包");
     }
 
-    const targetAddress = address || this.currentAccount;
-    const balance = await this.provider.getBalance(targetAddress);
-    return ethers.formatEther(balance);
+    try {
+      // 确保网络信息是最新的
+      await this.updateCurrentNetwork();
+      
+      const targetAddress = address || this.currentAccount;
+      const balance = await this.provider.getBalance(targetAddress);
+      return ethers.formatEther(balance);
+    } catch (error) {
+      console.error("获取余额失败:", error);
+      throw error;
+    }
   }
 
   // 格式化ETH金额
@@ -307,9 +345,9 @@ export class Web3Service {
 
   // 验证Chain ID格式
   validateChainId(chainId) {
-    // JuChain的Chain ID: 202599 (十进制) = 0x31707 (十六进制)
-    const expectedDecimal = 202599;
-    const expectedHex = "0x31707";
+    // JuChain的Chain ID: 210000 (十进制) = 0x33450 (十六进制)
+    const expectedDecimal = 210000;
+    const expectedHex = "0x33450";
 
     if (typeof chainId === "string") {
       return chainId.toLowerCase() === expectedHex.toLowerCase();
@@ -342,6 +380,99 @@ export class Web3Service {
       console.error("手动添加JuChain网络失败:", error);
       throw error;
     }
+  }
+
+  // 切换到JuChain主网
+  async switchToJuChainMainnet() {
+    console.log("正在切换到JuChain主网...");
+    try {
+      await this.switchNetwork("JUCHAIN_MAINNET");
+      
+      // 等待网络切换完成
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 重新初始化provider和signer以避免网络不一致
+      if (this.provider) {
+        this.provider = new ethers.BrowserProvider(window.ethereum);
+        this.signer = await this.provider.getSigner();
+      }
+      
+      // 更新当前网络信息
+      await this.updateCurrentNetwork();
+      console.log("成功切换到JuChain主网");
+      return true;
+    } catch (error) {
+      console.error("切换到JuChain主网失败:", error);
+      throw new Error("切换到JuChain主网失败: " + error.message);
+    }
+  }
+
+  // 切换到JuChain测试网
+  async switchToJuChainTestnet() {
+    console.log("正在切换到JuChain测试网...");
+    try {
+      await this.switchNetwork("JUCHAIN");
+      // 更新当前网络信息
+      await this.updateCurrentNetwork();
+      console.log("成功切换到JuChain测试网");
+      return true;
+    } catch (error) {
+      console.error("切换到JuChain测试网失败:", error);
+      throw new Error("切换到JuChain测试网失败: " + error.message);
+    }
+  }
+
+  // 手动添加JuChain主网
+  async addJuChainMainnetManually() {
+    const juchainMainnetConfig = CONTRACT_CONFIG.NETWORKS.JUCHAIN_MAINNET;
+
+    try {
+      console.log("正在手动添加JuChain主网配置:", juchainMainnetConfig);
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [juchainMainnetConfig],
+      });
+
+      // 验证添加是否成功
+      const currentChainId = await window.ethereum.request({
+        method: "eth_chainId",
+      });
+      console.log("当前Chain ID:", currentChainId);
+
+      return true;
+    } catch (error) {
+      console.error("手动添加JuChain主网失败:", error);
+      throw error;
+    }
+  }
+
+  // 获取当前连接的网络类型
+  getCurrentNetworkType() {
+    if (!this.currentNetwork) {
+      return null;
+    }
+
+    const chainId = Number(this.currentNetwork.chainId);
+    switch (chainId) {
+      case 5777:
+        return "GANACHE";
+      case 202599:
+        return "JUCHAIN_TESTNET";
+      case 210000:
+        return "JUCHAIN_MAINNET";
+      default:
+        return "UNKNOWN";
+    }
+  }
+
+  // 检查是否已连接到JuChain主网
+  isConnectedToJuChainMainnet() {
+    return this.getCurrentNetworkType() === "JUCHAIN_MAINNET";
+  }
+
+  // 检查是否已连接到JuChain测试网
+  isConnectedToJuChainTestnet() {
+    return this.getCurrentNetworkType() === "JUCHAIN_TESTNET";
   }
 }
 

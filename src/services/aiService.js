@@ -1,10 +1,18 @@
 // AI 对话服务 - 接入 Coze API
 export class AIService {
   constructor() {
-    this.apiUrl = "https://api.coze.cn/v3/chat";
-    this.authToken =
-      "pat_0wgfHRcToVR69tUKoPnGculBGWlgb56Acxkhs8n3iIhGEqFGBl35t1fj1z7Myzfy";
-    this.botId = "7519080978552373263";
+    // 从环境变量读取配置
+    this.apiUrl = import.meta.env.VITE_COZE_API_URL;
+    this.authToken = import.meta.env.VITE_COZE_AUTH_TOKEN;
+    this.botId = import.meta.env.VITE_COZE_BOT_ID;
+
+    // 验证必需的环境变量
+    if (!this.authToken) {
+      throw new Error("VITE_COZE_AUTH_TOKEN 环境变量未设置");
+    }
+    if (!this.botId) {
+      throw new Error("VITE_COZE_BOT_ID 环境变量未设置");
+    }
 
     // 事件处理器
     this.onChatCreated = null;

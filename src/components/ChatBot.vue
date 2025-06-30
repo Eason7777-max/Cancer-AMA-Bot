@@ -603,8 +603,10 @@ const getNetworkName = (chainId) => {
       return 'Ganache本地网络'
     case 202599:
       return 'JuChain测试网'
+    case 210000:
+      return 'JuChain主网'
     default:
-      return '未知网络'
+      return 'JuChain主网' // 默认显示主网
   }
 }
 

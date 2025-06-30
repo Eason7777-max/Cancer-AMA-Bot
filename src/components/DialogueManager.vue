@@ -221,8 +221,10 @@ const getCurrencySymbol = computed(() => {
       return 'ETH'
     case 202599:
       return 'JU'
+    case 210000:
+      return 'JU'
     default:
-      return 'ETH'
+      return 'JU' // 默认使用JU（主网货币）
   }
 })
 

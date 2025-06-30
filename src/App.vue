@@ -137,16 +137,40 @@ const handleChainChanged = async (chainInfo) => {
       chatRef.value.clearMessages()
     }
     
-    // 刷新钱包余额 - 不同网络余额可能不同
+    // 等待网络切换完全完成
+    console.log('App.vue: 等待网络切换完成...')
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // 刷新钱包余额 - 不同网络余额可能不同  
     if (walletRef.value) {
       console.log('App.vue: 刷新新网络的钱包余额')
-      await walletRef.value.refreshBalance()
+      try {
+        await walletRef.value.refreshBalance()
+      } catch (balanceError) {
+        console.warn('App.vue: 钱包余额刷新失败，将稍后重试:', balanceError)
+        // 延迟重试
+        setTimeout(async () => {
+          try {
+            await walletRef.value.refreshBalance()
+            console.log('App.vue: 钱包余额重试刷新成功')
+          } catch (retryError) {
+            console.error('App.vue: 钱包余额重试刷新仍失败:', retryError)
+          }
+        }, 3000)
+      }
     }
     
     // 刷新对话次数数据 - 不同网络的合约数据不同
     if (dialogueRef.value) {
       console.log('App.vue: 刷新新网络的对话次数数据')
-      await dialogueRef.value.refreshDialogues()
+      setTimeout(async () => {
+        try {
+          await dialogueRef.value.refreshDialogues()
+          console.log('App.vue: 对话次数数据刷新成功')
+        } catch (dialogueError) {
+          console.error('App.vue: 对话次数数据刷新失败:', dialogueError)
+        }
+      }, 1000)
     }
     
     console.log('App.vue: 网络切换后数据刷新完成')
@@ -154,7 +178,7 @@ const handleChainChanged = async (chainInfo) => {
     // 显示网络切换提示
     ElNotification({
       title: '网络已切换',
-      message: '已切换到新网络，对话历史已清空',
+      message: `已切换到${getNetworkName(chainInfo.newChainId)}，对话历史已清空`,
       type: 'info',
       duration: 3000
     })
@@ -220,8 +244,23 @@ const getCurrencySymbol = (chainId) => {
       return 'ETH'
     case 202599:
       return 'JU'
+    case 210000:
+      return 'JU'
     default:
-      return 'ETH'
+      return 'JU' // 默认使用JU（主网货币）
+  }
+}
+
+const getNetworkName = (chainId) => {
+  switch (chainId) {
+    case 5777:
+      return 'Ganache本地网络'
+    case 202599:
+      return 'JuChain测试网'
+    case 210000:
+      return 'JuChain主网'
+    default:
+      return 'JuChain主网' // 默认显示主网
   }
 }
 
@@ -401,7 +440,7 @@ onUnmounted(() => {
         
         <el-descriptions :column="1" border>
           <el-descriptions-item label="版本">v1.0.0</el-descriptions-item>
-          <el-descriptions-item label="区块链网络">JuChain / Ganache</el-descriptions-item>
+          <el-descriptions-item label="区块链网络">JuChain 主网</el-descriptions-item>
           <el-descriptions-item label="支持币种">JU / ETH</el-descriptions-item>
           <el-descriptions-item label="兑换比率">0.01 JU/ETH = 5次对话</el-descriptions-item>
         </el-descriptions>

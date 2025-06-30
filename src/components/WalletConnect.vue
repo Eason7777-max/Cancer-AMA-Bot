@@ -190,13 +190,33 @@ const refreshBalance = async () => {
   refreshing.value = true
   try {
     console.log('WalletConnect: 开始刷新余额，当前账号:', account.value)
+    console.log('WalletConnect: 当前网络ID:', currentChainId.value)
+    
     const bal = await web3Service.getBalance()
     balance.value = bal
     console.log('WalletConnect: 余额刷新成功:', bal)
     emit('balance-updated')
   } catch (err) {
     console.error('刷新余额失败:', err)
-    ElMessage.error('刷新余额失败')
+    
+    // 如果是网络错误，尝试重新同步网络
+    if (err.message && err.message.includes('network changed')) {
+      console.log('WalletConnect: 检测到网络变化错误，重试获取余额...')
+      try {
+        // 等待网络同步
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await web3Service.updateCurrentNetwork()
+        const retryBal = await web3Service.getBalance()
+        balance.value = retryBal
+        console.log('WalletConnect: 重试余额获取成功:', retryBal)
+        emit('balance-updated')
+        return
+      } catch (retryErr) {
+        console.error('WalletConnect: 重试余额获取也失败:', retryErr)
+      }
+    }
+    
+    ElMessage.error('刷新余额失败: ' + (err.message || '未知错误'))
   } finally {
     refreshing.value = false
   }
@@ -219,8 +239,10 @@ const getNetworkName = () => {
       return 'Ganache Local'
     case 202599:
       return 'JuChain Testnet'
+    case 210000:
+      return 'JuChain Mainnet'
     default:
-      return '未知网络'
+      return 'JuChain Mainnet' // 默认显示主网
   }
 }
 
@@ -228,9 +250,10 @@ const getNetworkType = () => {
   switch (currentChainId.value) {
     case 5777:
     case 202599:
+    case 210000:
       return 'success'
     default:
-      return 'warning'
+      return 'success' // 默认显示成功状态（主网）
   }
 }
 
@@ -240,8 +263,10 @@ const getCurrencySymbol = computed(() => {
       return 'ETH'
     case 202599:
       return 'JU'
+    case 210000:
+      return 'JU'
     default:
-      return 'ETH'
+      return 'JU' // 默认使用JU（主网货币）
   }
 })
 
@@ -283,15 +308,22 @@ const setupListeners = () => {
     currentChainId.value = parseInt(chainId, 16)
     console.log('WalletConnect: 网络从', oldChainId, '切换到', currentChainId.value)
     
-    // 更新web3Service中的网络信息
     try {
+      // 等待一下确保网络切换完成
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // 更新web3Service中的网络信息
       await web3Service.updateCurrentNetwork()
+      
+      // 延迟刷新余额，确保网络完全同步
+      setTimeout(() => {
+        refreshBalance()
+      }, 500)
+      
+      console.log('WalletConnect: 网络切换处理完成')
     } catch (error) {
-      console.error('WalletConnect: 更新web3Service网络失败:', error)
+      console.error('WalletConnect: 网络切换处理失败:', error)
     }
-    
-    // 刷新余额
-    refreshBalance()
     
     // 发出网络切换事件
     emit('chain-changed', {

@@ -5,7 +5,7 @@ export const APP_CONFIG = {
   version: "1.0.0",
   description: "基于区块链的AI对话智能体",
 
-  // 合约地址配置 (需要在部署后更新)
+  // 合约地址配置 (优先从环境变量读取，默认使用主网)
   contracts: {
     // Ganache 本地网络
     ganache: {
@@ -15,11 +15,20 @@ export const APP_CONFIG = {
     },
     // JuChain 测试网
     juchain: {
-      dialogueExchange: "0x2f56bd43b9D9410c8B11ac742552361FC579C369", // 已更新
-      chainId: 202599,
-      rpcUrl: "https://testnet-rpc.juchain.org",
+      dialogueExchange: import.meta.env.VITE_JUCHAIN_TESTNET_CONTRACT_ADDRESS,
+      chainId: parseInt(import.meta.env.VITE_JUCHAIN_TESTNET_CHAIN_ID) || 202599,
+      rpcUrl: import.meta.env.VITE_JUCHAIN_TESTNET_RPC || "https://testnet-rpc.juchain.org",
+    },
+    // JuChain 主网 (默认网络)
+    juchainMainnet: {
+      dialogueExchange: import.meta.env.VITE_JUCHAIN_MAINNET_CONTRACT_ADDRESS,
+      chainId: parseInt(import.meta.env.VITE_JUCHAIN_MAINNET_CHAIN_ID) || 210000,
+      rpcUrl: import.meta.env.VITE_JUCHAIN_MAINNET_RPC || "https://rpc.juchain.org",
     },
   },
+
+  // 默认网络配置 (设置为主网)
+  defaultNetwork: "juchainMainnet",
 
   // AI服务配置
   ai: {
@@ -56,6 +65,8 @@ export const getContractAddress = (chainId) => {
       return APP_CONFIG.contracts.ganache.dialogueExchange;
     case 202599:
       return APP_CONFIG.contracts.juchain.dialogueExchange;
+    case 210000:
+      return APP_CONFIG.contracts.juchainMainnet.dialogueExchange;
     default:
       throw new Error(`不支持的网络 chainId: ${chainId}`);
   }
@@ -68,6 +79,8 @@ export const getNetworkConfig = (chainId) => {
       return APP_CONFIG.contracts.ganache;
     case 202599:
       return APP_CONFIG.contracts.juchain;
+    case 210000:
+      return APP_CONFIG.contracts.juchainMainnet;
     default:
       throw new Error(`不支持的网络 chainId: ${chainId}`);
   }
@@ -81,6 +94,9 @@ export const updateContractAddress = (chainId, address) => {
       break;
     case 202599:
       APP_CONFIG.contracts.juchain.dialogueExchange = address;
+      break;
+    case 210000:
+      APP_CONFIG.contracts.juchainMainnet.dialogueExchange = address;
       break;
     default:
       throw new Error(`不支持的网络 chainId: ${chainId}`);
