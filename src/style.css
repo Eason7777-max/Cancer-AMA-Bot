@@ -1,0 +1,239 @@
+/* 全局样式 - 科技感简约风格 */
+
+:root {
+  /* 主题色 */
+  --primary-color: #409eff;
+  --primary-light: #79bbff;
+  --primary-dark: #337ecc;
+  
+  /* 背景色 */
+  --bg-color: #0a0e27;
+  --bg-secondary: #1a1f3a;
+  --bg-tertiary: #252a47;
+  
+  /* 文字色 */
+  --text-primary: #ffffff;
+  --text-secondary: #b0b6d4;
+  --text-muted: #6b7280;
+  
+  /* 边框色 */
+  --border-color: #2d3748;
+  --border-light: #4a5568;
+  
+  /* 阴影 */
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.4);
+  
+  /* 渐变 */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  background: var(--gradient-background);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+#app {
+  height: 100vh;
+  width: 100vw;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-light);
+}
+
+/* Element Plus 组件自定义样式 */
+.el-button {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.el-card {
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+}
+
+.el-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-hover);
+}
+
+.el-input__wrapper {
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.el-input__wrapper:hover {
+  border-color: var(--primary-color);
+}
+
+.el-input__wrapper.is-focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+}
+
+/* 动画效果 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from {
+  transform: translateY(20px);
+  opacity: 0;
+}
+
+.slide-up-leave-to {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+
+/* 科技感光效 */
+.glow {
+  position: relative;
+}
+
+.glow::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--gradient-primary);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.glow:hover::before {
+  opacity: 1;
+}
+
+/* 消息气泡样式 */
+.message-bubble {
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  max-width: 80%;
+  word-wrap: break-word;
+  position: relative;
+}
+
+.message-bubble.user {
+  background: var(--gradient-primary);
+  color: white;
+  margin-left: auto;
+  text-align: right;
+}
+
+.message-bubble.assistant {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  margin-right: auto;
+}
+
+.message-bubble::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.message-bubble.user::before {
+  right: -8px;
+  top: 12px;
+  border-width: 8px 0 8px 8px;
+  border-color: transparent transparent transparent var(--primary-color);
+}
+
+.message-bubble.assistant::before {
+  left: -8px;
+  top: 12px;
+  border-width: 8px 8px 8px 0;
+  border-color: transparent var(--border-color) transparent transparent;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .message-bubble {
+    max-width: 90%;
+  }
+}
+
+/* 加载动画 */
+.loading-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.loading-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  animation: loading-bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes loading-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+} 
