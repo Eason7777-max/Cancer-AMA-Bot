@@ -246,5 +246,5 @@ MIT License
 
 ---
 
-**Powered by JuChain • 基于区块链的 AI 对话智能体**
+**Powered by CANCER AMA BOT**
 >>>>>>> master
